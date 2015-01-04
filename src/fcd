@@ -1,3 +1,25 @@
+#!/usr/bin/env python
+
+#-----------------------------------------------------------------------------------
+#
+# FILESYSTEM CHANGE DETECTOR
+#
+# license: MIT
+# author: Nuno Franco da Costa <nuno@francodacosta.com>
+# url: https://github.com/francodacosta/filesystem-change-detector
+#
+#-----------------------------------------------------------------------------------
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+#-----------------------------------------------------------------------------------
+
 import argparse
 import sys
 import os
@@ -191,7 +213,7 @@ elif options.remove_file is not False :
 
 elif options.check_all is not False :
     cli.checkKnownFiles(options.db_path)
-    
+
 else:
     cli.checkKnownFiles(options.db_path)
 
