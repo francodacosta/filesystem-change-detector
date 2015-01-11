@@ -105,7 +105,7 @@ class FilesystemChangeDetectorCli(object):
         for file in conn.execute('SELECT * FROM files'):
             success("%s: %s" % (file[0], file[1]))
 
-    def checkKnownFiles(self, dbPath):
+    def checkKnownFiles(self, dbPath, ignoreList):
         msg('Checking files added to FSC db %s' % dbPath)
         if not os.path.isfile(dbPath) :
             error("FCD database not found (%s)" % dbPath)
@@ -117,6 +117,10 @@ class FilesystemChangeDetectorCli(object):
 
         for data in filesData:
             file = os.path.abspath(data[0])
+
+            if self.isIgnored(file, ignoreList):
+                continue
+
             dbCrc = data[1]
 
             if not os.path.isfile(file) :
@@ -127,8 +131,14 @@ class FilesystemChangeDetectorCli(object):
             if dbCrc != crc:
                 error("%s CRC MISMATCH (%s: %s)" % (file, dbCrc, crc))
 
+    def isIgnored(self, file, ignored):
+        for i in ignored:
+            if file.startswith(i):
+                return True
+        return False
 
-    def checkFolder(self, folder, dbPath):
+
+    def checkFolder(self, folder, dbPath, ignoreList):
         dbPath=os.path.abspath(dbPath)
         folder=os.path.abspath(folder)
 
@@ -158,9 +168,13 @@ class FilesystemChangeDetectorCli(object):
         deletedFiles = list(set(filesInDb) - set(fileList))
 
         for f in deletedFiles:
-            error("%s: DELETED" % f)
+            if not self.isIgnored(f, ignoreList):
+                error("%s: DELETED" % f)
 
         for file in fileList:
+            if self.isIgnored(file, ignoreList):
+                continue
+
             cursor = conn.execute('SELECT path, crc from files where path="%s"' % file)
             dbFile = cursor.fetchone()
 
@@ -176,7 +190,17 @@ class FilesystemChangeDetectorCli(object):
 
 
 
-parser = argparse.ArgumentParser(description='Filesystem Change Detector')
+parser = argparse.ArgumentParser(description='Filesystem Change Detector', epilog="""
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+
+""")
 
 parser.add_argument('--init',         dest='init_db',      action="store_const", default=False,         const=True, help='creates a new FCD database')
 parser.add_argument('--db',           dest='db_path',      action="store",       default='/etc/fsd.db', help='path to the FCD database')
@@ -186,12 +210,18 @@ parser.add_argument('--add-folder',   dest='add_folder',   action="store",      
 parser.add_argument('--list',         dest='list',         action="store_const", default=False,         const=True, help='list all files known to FCD')
 parser.add_argument('--check-folder', dest='check_folder', action="store",       default=False,         help='check a folder for changed files')
 parser.add_argument('--check-all',    dest='check_all',    action="store_const", default=False,         const=True,  help='check a folder for changed files')
+parser.add_argument('--ignore',      dest='ignore',        action="append",      default=[],            help='file or folder to ignore, can be used multiple times')
 
 options = parser.parse_args()
 
 cli= FilesystemChangeDetectorCli()
 
-print
+
+ignoredPaths=[]
+for i in options.ignore:
+    ignoredPaths.append(os.path.abspath(i))
+
+print ignoredPaths
 
 if options.init_db :
     cli.initDatabase(options.db_path)
@@ -205,16 +235,16 @@ elif options.add is not False :
 elif options.add_folder is not False :
     cli.addFolder(options.add_folder, options.db_path)
 
-elif options.check_folder is not False :
-    cli.checkFolder(options.check_folder, options.db_path)
-
 elif options.remove_file is not False :
     cli.removeFile(options.remove_file, options.db_path)
 
+elif options.check_folder is not False :
+    cli.checkFolder(options.check_folder, options.db_path, ignoredPaths)
+
 elif options.check_all is not False :
-    cli.checkKnownFiles(options.db_path)
+    cli.checkKnownFiles(options.db_path, ignoredPaths)
 
 else:
-    cli.checkKnownFiles(options.db_path)
+    cli.checkKnownFiles(options.db_path, ignoredPaths)
 
 print

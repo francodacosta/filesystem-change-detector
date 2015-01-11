@@ -34,3 +34,6 @@ will check all files in the database, it will report errors if the checksum has 
 
 ### --check-folder _path_
 will compare all files in the folder with the file list in the database, it will report errors if a file was added or removed to the folder and also if there is a checksum mismatch
+
+### --ignore _path_
+the file/folder will be ignored, can be used multiple times
